@@ -255,7 +255,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train AL-RNN model with validation (hierarchical or non-hierarchical).')
     parser.add_argument('--M', type=int, default=4, help='Latent dimension')
     parser.add_argument('--P', type=int, default=1, help='Number of positive units')
-    parser.add_argument('--N_feat', type=int, default=8, help='Number of features for hierarchical RNN')
+    parser.add_argument('--N_feat', type=int, default=10, help='Number of features for hierarchical RNN')
     parser.add_argument('--model_type', type=str, default='non_hierarchical', choices=['hierarchical', 'non_hierarchical'], 
                        help='Model type: hierarchical or non_hierarchical')
     parser.add_argument('--decoder_mode', type=str, default='individual', choices=['shared', 'individual', 'hierarchical'],
