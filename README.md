@@ -4,6 +4,10 @@
 
 This codebase accompanies the paper **"Data-Driven Hierarchical Digital Twins of Social Interactions"**. We demonstrate how generative digital twins can be derived from sparse behavioral data in trust games, capturing the latent dynamics of social interaction without restrictive mechanistic assumptions. The approach enables prediction of future behavior, mechanistic analysis of trust-building dynamics, and in-silico experimentation with novel scenarios.
 
+<p align="center">
+  <img src="fig1_overview_hier.png" alt="Hierarchical Digital Twin Architecture">
+</p>
+
 ## Overview
 - **Model:** Hierarchical (or non-hierarchical) AL-RNN that encodes inputs, runs a recurrent latent dynamics model, and decodes ordinal outputs.
 - **Structure:** `encoder` -> `rnn` (hierarchical or flat) -> `decoder` (shared/individual/hierarchical).
