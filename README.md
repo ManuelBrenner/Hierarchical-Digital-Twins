@@ -24,7 +24,7 @@ python train_model.py --model_type hierarchical --M 4 --P 1 --N_feat 10 --n_epoc
 
 ## Main Hyperparameters
 - **Latent size (`--M`)**: dimensionality of latent state.
-- **Positive units (`--P`)**: number of positive-only units (model-specific).
+- **PWL units (`--P`)**: number of units with ReLU activation function (model-specific).
 - **Features (`--N_feat`)**: hierarchical feature dimension (only for `hierarchical`).
 - **Model type (`--model_type`)**: `hierarchical` or `non_hierarchical`.
 - **Decoder mode (`--decoder_mode`)**: `shared`, `individual`, or `hierarchical`.
