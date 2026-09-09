@@ -44,3 +44,10 @@ python train_model.py --model_type hierarchical --M 4 --P 1 --N_feat 10 --n_epoc
 ## Notes
 - Validation runs occur periodically (configured in [train_model.py](train_model.py#L1)) and the best model (by test MAE) is checkpointed.
 
+## Comparisons
+[comparisons/](comparisons/) holds baselines and ablations compared against the AL-RNN:
+- [comparisons/baseline_models/](comparisons/baseline_models/): Fehr-Schmidt RL model ([fs_rl_model.py](comparisons/baseline_models/fs_rl_model.py), fit via [fit_evaluate.py](comparisons/baseline_models/fit_evaluate.py)) and a Bayesian trustee-tracking model ([bayes_model.py](comparisons/baseline_models/bayes_model.py)), plus decoder ablations and result summaries.
+- ["Logistic regression and AR.ipynb"](comparisons/baseline_models/Logistic%20regression%20and%20AR.ipynb): cue-based behavioral baselines (group-level ridge, subject-level logistic regression, a static per-cue noise ceiling, and an ARX(1) model) compared against each other and the AL-RNN.
+- [gru_rnn.py](comparisons/gru_rnn.py): non-hierarchical GRU backbone as a drop-in alternative to the AL-RNN.
+- [compare_observation_models.ipynb](comparisons/compare_observation_models.ipynb): ordinal vs. softmax observation model comparison.
+
