@@ -248,13 +248,90 @@ class Decoder_cumulative_link(BaseDecoder):
         predictions = self.forward(z)
         return predictions, predictions
 
+class Decoder_softmax(BaseDecoder):
+    """Categorical softmax decoder for ordinal data.
+
+    Interface mirrors Decoder_cumulative_link (forward/log_likelihood/predict_spikes) so it is a
+    drop-in swap, but each category gets its own free logit instead of shared ordered thresholds.
+    """
+    def __init__(self, dz, dq, num_categories=5):
+        super().__init__(dz, dq)
+        self.num_categories = num_categories
+
+        self.weight = nn.Parameter(torch.randn(dq, num_categories, dz) * 0.1, requires_grad=True)
+        self.bias = nn.Parameter(torch.randn(dq, num_categories) * 0.1, requires_grad=True)
+
+    def forward(self, z):
+        """Convert latent states to predicted category (most likely level)"""
+        probabilities = self.get_category_probabilities(z)
+        x = torch.argmax(probabilities, dim=-1) + 1
+        x = x.float()
+        x[torch.any(z.isnan(), dim=-1), :] = float('nan')
+        return x
+
+    def get_category_probabilities(self, z):
+        """Get probabilities for each category"""
+        logits = self.calculate_logits(z)
+        probabilities = F.softmax(logits, dim=-1)
+        return probabilities
+
+    def calculate_logits(self, z):
+        """Calculate per-category logits"""
+        batch_size, T, dz = z.shape
+        z_flat = z.reshape(-1, dz)  # (batch_size * T, dz)
+
+        logits = torch.einsum('nd,qcd->nqc', z_flat, self.weight) + self.bias.unsqueeze(0)
+        logits = logits.reshape(batch_size, T, self.dq, self.num_categories)
+        return logits
+
+    def log_likelihood(self, x, z):
+        """Compute categorical softmax log likelihood"""
+        probabilities = self.get_category_probabilities(z)
+
+        if probabilities.shape[2] == 1:  # dq = 1
+            probabilities = probabilities.squeeze(2)  # (batch_size, T, num_categories)
+        else:
+            probabilities = probabilities[:, :, 0, :]  # (batch_size, T, num_categories)
+
+        batch_size, T, num_categories = probabilities.shape
+        even_mask = torch.zeros(T, dtype=torch.bool, device=probabilities.device)
+        even_mask[::2] = True  # Set even indices to True
+
+        nan_mask = ~torch.isnan(x).squeeze(-1)  # (batch_size, T)
+        valid_mask = even_mask.unsqueeze(0) & nan_mask  # (batch_size, T)
+
+        if not valid_mask.any():
+            return torch.tensor(0.0, device=probabilities.device)
+
+        valid_probabilities = probabilities[valid_mask]  # (num_valid, num_categories)
+        valid_x = x.squeeze(-1)[valid_mask]  # (num_valid,)
+        categorical_indices = valid_x.long() - 1  # Convert 1-5 to 0-4
+        if -1 in categorical_indices:
+            categorical_indices[categorical_indices == -1] = 1
+
+        batch_indices = torch.arange(valid_probabilities.shape[0], device=valid_probabilities.device)
+        selected_probs = valid_probabilities[batch_indices, categorical_indices]
+
+        selected_probs[selected_probs < 1e-10] = 1e-10
+
+        ll_softmax = torch.sum(torch.log(selected_probs))
+
+        assert torch.isfinite(ll_softmax)
+        return ll_softmax
+
+    def predict_spikes(self, z, n_samples=1):
+        """Generate predictions from softmax model"""
+        predictions = self.forward(z)
+        return predictions, predictions
+
 def get_decoder(decoder_type, dz, dq, num_categories=5):
     """Factory function to get decoder of specified type"""
     decoders = {
         'poisson': Decoder_Poisson,
         'generalized_poisson': Decoder_GeneralizedPoisson,
         'negative_binomial': Decoder_NegativeBinomial,
-        'cumulative_link': lambda dz, dq: Decoder_cumulative_link(dz, dq, num_categories)
+        'cumulative_link': lambda dz, dq: Decoder_cumulative_link(dz, dq, num_categories),
+        'softmax': lambda dz, dq: Decoder_softmax(dz, dq, num_categories)
     }
     
     if decoder_type not in decoders:
